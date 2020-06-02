@@ -5,3 +5,6 @@ declare module '*.jpeg'
 declare module '*.gif'
 declare module '*.bmp'
 declare module '*.tiff'
+
+declare module '@walletconnect/web3-provider';
+declare module "js-conflux-sdk/dist/js-conflux-sdk.umd.min.js"

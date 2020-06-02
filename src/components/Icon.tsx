@@ -17,7 +17,9 @@ const Icon = (props: any) => {
     <SIcon
       src={src}
       size={size}
-      onError={(event: any) => (event.target.src = fallback)}
+      onError={(event: any) => {
+        console.log(event, fallback)
+      }}
       {...props}
     />
   );
@@ -31,7 +33,7 @@ Icon.propTypes = {
 
 Icon.defaultProps = {
   src: null,
-  fallback: null,
+  fallback: '',
   size: 20,
 };
 
