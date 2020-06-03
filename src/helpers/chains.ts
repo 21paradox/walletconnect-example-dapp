@@ -11,6 +11,15 @@ const supportedChains: IChainData[] = [
     rpc_url: "https://mainnet.infura.io/",
   },
   {
+    name: "cfx|eth Mainnet",
+    short_name: "cfx",
+    chain: "cfx",
+    network: "mainnet",
+    chain_id: 111,
+    network_id: 1,
+    rpc_url: "https://mainnet.infura.io/",
+  },
+  {
     name: "Ethereum Ropsten",
     short_name: "rop",
     chain: "ETH",

@@ -15,11 +15,17 @@ import { apiGetAccountAssets, apiGetGasPrices, apiGetAccountNonce } from "./help
 // import {
 //   recoverTypedSignature
 // } from "./helpers/ethSigUtil";
-import { sanitizeHex, recoverPersonalSignature } from "./helpers/utilities";
+import { sanitizeHex, recoverPersonalSignature, cfxAddr } from "./helpers/utilities";
 import { convertAmountToRawNumber, convertStringToHex } from "./helpers/bignumber";
 import { IAssetData } from "./helpers/types";
 import Banner from "./components/Banner";
 import AccountAssets from "./components/AccountAssets";
+import * as Cfx from 'js-conflux-sdk/dist/js-conflux-sdk.umd.min.js';
+import Myprovider from './myProvider'
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import fcabi from './fcabi.js'
+import Big from 'bignumber.js'
 
 const SLayout = styled.div`
   position: relative;
@@ -123,6 +129,10 @@ const STestButton = styled(Button)`
   margin: 12px;
 `;
 
+const STestButtonCfx = styled(STestButton)`
+  background: linear-gradient(135deg, rgb(100, 227, 223) 0%, rgb(100, 187, 232) 22%, rgb(100, 115, 229) 75%, rgb(116, 100, 232) 100%);
+`
+
 interface IAppState {
   connector: WalletConnect | null;
   fetching: boolean;
@@ -175,6 +185,13 @@ class App extends React.Component<any, any> {
 
       // console log the uri for development
       console.log(uri);
+      toast.info(<span style={{ whiteSpace: 'pre-wrap', display: 'block', wordBreak: 'break-all' }}>
+        {uri}
+      </span>, {
+        position: "top-left",
+        autoClose: false,
+        hideProgressBar: true,
+      });
 
       // display QR Code modal
       WalletConnectQRCodeModal.open(uri, () => {
@@ -225,12 +242,20 @@ class App extends React.Component<any, any> {
     if (connector.connected) {
       const { chainId, accounts } = connector;
       const address = accounts[0];
+      console.log({
+        connected: true,
+        chainId,
+        accounts,
+        address,
+      })
+
       this.setState({
         connected: true,
         chainId,
         accounts,
         address,
       });
+      this.onSessionUpdate(accounts, chainId);
     }
 
     this.setState({ connector });
@@ -276,10 +301,14 @@ class App extends React.Component<any, any> {
     const { address, chainId } = this.state;
     this.setState({ fetching: true });
     try {
-      // get account balances
-      const assets = await apiGetAccountAssets(address, chainId);
+      if (chainId === 111) {
+        console.log('test')
+      } else {
+        // get account balances
+        const assets = await apiGetAccountAssets(address, chainId);
+        await this.setState({ fetching: false, address, assets });
+      }
 
-      await this.setState({ fetching: false, address, assets });
     } catch (error) {
       console.error(error);
       await this.setState({ fetching: false });
@@ -498,6 +527,117 @@ class App extends React.Component<any, any> {
     }
   };
 
+  public testSendCfx = async () => {
+    const { connector, address } = this.state;
+    if (!connector) {
+      return;
+    }
+    // const myProvider = new Myprovider('http://wallet-mainnet-jsonrpc.conflux-chain.org:12537')
+    const myProvider = new Myprovider('/api')
+    const cfx = new Cfx.Conflux()
+    cfx.provider = myProvider
+    cfx.provider.connector = connector;
+    toast.dismiss();
+
+    const toastId = toast.info('唤起远程授权', {
+      position: "top-right",
+      autoClose: false,
+      hideProgressBar: true,
+    });
+
+    try {
+      const resultPromise = cfx.sendTransaction({ // Not await here, just get promise
+        chainId: 0,
+        from: cfxAddr(address),
+        to: '0x1b313Dd19F049C12E25dE358512D7B5a0fee9786',
+        value: Cfx.util.unit.fromCFXToDrip(0.1),
+      });
+
+      const sendSuccesResult = await resultPromise;
+      toast.update(toastId, {
+        type: 'success',
+        render: <span>
+          send success &nbsp;
+        <a target="_blank" href={`https://confluxscan.io/transactionsdetail/${sendSuccesResult}`} style={{ textDecoration: 'underline' }}>前往scan查看</a>
+        </span>
+      });
+
+      const result = await resultPromise.confirmed({ delta: 3000 });
+      toast.update(toastId, {
+        type: 'success',
+        render: <span>
+          confirmed &nbsp;
+          <a target="_blank" href={`https://confluxscan.io/transactionsdetail/${result.transactionHash}`} style={{ textDecoration: 'underline' }}>前往scan查看</a>
+        </span>
+      });
+
+      console.log(result)
+      // const result = await connector.sendCustomRequest(customRequest);
+      // console.log(Cfx.util.unit.fromDripToCFX(balance)); // "93.7499420597305000"
+    } catch (e) {
+      console.log(e)
+      toast.update(toastId, {
+        type: 'error',
+        render: 'send error'
+      });
+      throw e;
+    }
+  }
+
+  public testSendFc = async () => {
+    const { connector, address } = this.state;
+    if (!connector) {
+      return;
+    }
+    // const myProvider = new Myprovider('http://wallet-mainnet-jsonrpc.conflux-chain.org:12537')
+    const myProvider = new Myprovider('/api')
+    const cfx = new Cfx.Conflux()
+    cfx.provider = myProvider
+    cfx.provider.connector = connector;
+    toast.dismiss();
+
+    const toastId = toast.info('唤起远程授权', {
+      position: "top-right",
+      autoClose: false,
+      hideProgressBar: true,
+    });
+
+    try {
+      const contractNew = cfx.Contract({
+        abi: fcabi,
+        address: '0x88a8f9b1835ae66b6f1da3c930b7d11220bebf78'
+      });
+
+      const presision = new Big(10).pow(18)
+      const transferAmount = new Big('0.1').times(presision)
+      const value = Cfx.util.format.bigUInt(transferAmount);
+
+      const resultPromise = contractNew.send('0x1b313Dd19F049C12E25dE358512D7B5a0fee9786', value, Buffer.from('bytes'))
+        .sendTransaction({
+          chainId: 0,
+          from: cfxAddr(address)
+        });
+
+      const result = await resultPromise.confirmed({ delta: 3000 });
+      toast.update(toastId, {
+        type: 'success',
+        render: <span>
+          confirmed &nbsp;
+            <a target="_blank" href={`https://confluxscan.io/transactionsdetail/${result.transactionHash}`} style={{ textDecoration: 'underline' }}>前往scan查看</a>
+        </span>
+      });
+
+      console.log(result)
+    } catch (e) {
+      console.log(e)
+      toast.update(toastId, {
+        type: 'error',
+        render: 'send error'
+      });
+      throw e;
+    }
+  }
+
   public render = () => {
     const {
       assets,
@@ -533,36 +673,45 @@ class App extends React.Component<any, any> {
                 </SButtonContainer>
               </SLanding>
             ) : (
-              <SBalances>
-                <Banner />
-                <h3>Actions</h3>
-                <Column center>
-                  <STestButtonContainer>
-                    <STestButton left onClick={this.testSendTransaction}>
-                      {"eth_sendTransaction"}
-                    </STestButton>
-
-                    <STestButton left onClick={this.testSignPersonalMessage}>
-                      {"personal_sign"}
-                    </STestButton>
-
-                    <STestButton disabled left onClick={this.testSignTypedData}>
-                      {"eth_signTypedData"}
-                    </STestButton>
-                  </STestButtonContainer>
-                </Column>
-                <h3>Balances</h3>
-                {!fetching ? (
-                  <AccountAssets chainId={chainId} assets={assets} />
-                ) : (
+                <SBalances>
+                  <Banner />
+                  <h3>Actions</h3>
                   <Column center>
-                    <SContainer>
-                      <Loader />
-                    </SContainer>
+                    <STestButtonContainer>
+                      <STestButton left onClick={this.testSendTransaction}>
+                        {"eth_sendTransaction"}
+                      </STestButton>
+
+                      <STestButton left onClick={this.testSignPersonalMessage}>
+                        {"personal_sign"}
+                      </STestButton>
+
+                      <STestButton disabled left onClick={this.testSignTypedData}>
+                        {"eth_signTypedData"}
+                      </STestButton>
+
+                      <STestButtonCfx left onClick={this.testSendFc}>
+                        发送0.1fc 到0x1b313Dd19F049C12E25dE358512D7B5a0fee9786
+                    </STestButtonCfx>
+
+                      <STestButtonCfx left onClick={this.testSendCfx}>
+                        发送0.1cfx 到0x1b313Dd19F049C12E25dE358512D7B5a0fee9786
+                    </STestButtonCfx>
+
+                    </STestButtonContainer>
                   </Column>
-                )}
-              </SBalances>
-            )}
+                  <h3>Balances</h3>
+                  {!fetching ? (
+                    <AccountAssets chainId={chainId} assets={assets} />
+                  ) : (
+                      <Column center>
+                        <SContainer>
+                          <Loader />
+                        </SContainer>
+                      </Column>
+                    )}
+                </SBalances>
+              )}
           </SContent>
         </Column>
         <Modal show={showModal} toggleModal={this.toggleModal}>
@@ -587,11 +736,12 @@ class App extends React.Component<any, any> {
               </STable>
             </SModalContainer>
           ) : (
-            <SModalContainer>
-              <SModalTitle>{"Call Request Rejected"}</SModalTitle>
-            </SModalContainer>
-          )}
+                <SModalContainer>
+                  <SModalTitle>{"Call Request Rejected"}</SModalTitle>
+                </SModalContainer>
+              )}
         </Modal>
+        <ToastContainer closeOnClick={false} style={{zIndex: 9999999999}} />
       </SLayout>
     );
   };

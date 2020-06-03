@@ -144,3 +144,8 @@ export function recoverPersonalSignature(sig: string, msg: string): string {
   const signer = recoverPublicKey(sig, hash);
   return signer;
 }
+
+
+export function cfxAddr(addr: string) {
+  return addr.replace(/0x[\w]/, '0x1').toLowerCase();
+}
