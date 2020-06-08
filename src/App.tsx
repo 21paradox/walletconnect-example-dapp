@@ -26,6 +26,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import fcabi from './fcabi.js'
 import Big from 'bignumber.js'
+import WalletConnectCfx from './myWcClient'
 
 const SLayout = styled.div`
   position: relative;
@@ -134,7 +135,7 @@ const STestButtonCfx = styled(STestButton)`
 `
 
 interface IAppState {
-  connector: WalletConnect | null;
+  connector: WalletConnect | WalletConnectCfx | null;
   fetching: boolean;
   connected: boolean;
   chainId: number;
@@ -171,7 +172,7 @@ class App extends React.Component<any, any> {
     const bridge = "https://bridge.walletconnect.org";
 
     // create new connector
-    const connector = new WalletConnect({ bridge });
+    const connector = new WalletConnectCfx({ bridge });
 
     await this.setState({ connector });
 
@@ -532,7 +533,6 @@ class App extends React.Component<any, any> {
     if (!connector) {
       return;
     }
-    // const myProvider = new Myprovider('http://wallet-mainnet-jsonrpc.conflux-chain.org:12537')
     const myProvider = new Myprovider('/api')
     const cfx = new Cfx.Conflux()
     cfx.provider = myProvider
@@ -589,7 +589,6 @@ class App extends React.Component<any, any> {
     if (!connector) {
       return;
     }
-    // const myProvider = new Myprovider('http://wallet-mainnet-jsonrpc.conflux-chain.org:12537')
     const myProvider = new Myprovider('/api')
     const cfx = new Cfx.Conflux()
     cfx.provider = myProvider
@@ -637,6 +636,69 @@ class App extends React.Component<any, any> {
       throw e;
     }
   }
+
+  public testSendCfxByWallet = async () => {
+    const { connector, address } = this.state;
+    if (!connector) {
+      return;
+    }
+    toast.dismiss();
+
+    const toastId = toast.info('唤起远程授权', {
+      position: "top-right",
+      autoClose: false,
+      hideProgressBar: true,
+    });
+
+    try {
+      const resultPromise = connector.sendTransaction({
+        // chainId: 0,
+        from: cfxAddr(address),
+        to: '0x1b313Dd19F049C12E25dE358512D7B5a0fee9786',
+        value: Cfx.util.unit.fromCFXToDrip(0.1),
+      });
+
+      const sendSuccesResult = await resultPromise;
+      toast.update(toastId, {
+        type: 'success',
+        render: <span>
+          send success &nbsp;
+        <a target="_blank" href={`https://confluxscan.io/transactionsdetail/${sendSuccesResult}`} style={{ textDecoration: 'underline' }}>前往scan查看</a>
+        </span>
+      });
+
+      const requestId = () : string => {
+        return `${Date.now()}${Math.random().toFixed(7).substring(2)}`;
+      }
+
+      const customRequest = {
+        id: parseInt(requestId(), 10),
+        jsonrpc: "2.0",
+        method: 'cfx_getTransactionByHash',
+        params: [sendSuccesResult]
+      };
+
+      const blockHashRes = await connector.sendCustomRequest(customRequest);
+      console.log({ blockHashRes })
+
+      toast.update(toastId, {
+        type: 'success',
+        render: <span>
+          mined success &nbsp;
+        <a target="_blank" href={`https://confluxscan.io/transactionsdetail/${sendSuccesResult}`} style={{ textDecoration: 'underline' }}>前往scan查看</a>
+        </span>
+      });
+
+    } catch (e) {
+      console.log(e)
+      toast.update(toastId, {
+        type: 'error',
+        render: 'send error'
+      });
+      throw e;
+    }
+  }
+
 
   public render = () => {
     const {
@@ -696,6 +758,10 @@ class App extends React.Component<any, any> {
 
                       <STestButtonCfx left onClick={this.testSendCfx}>
                         发送0.1cfx 到0x1b313Dd19F049C12E25dE358512D7B5a0fee9786
+                    </STestButtonCfx>
+
+                    <STestButtonCfx left onClick={this.testSendCfxByWallet}>
+                        wallet发送0.1cfx 到0x1b313Dd19F049C12E25dE358512D7B5a0fee9786
                     </STestButtonCfx>
 
                     </STestButtonContainer>

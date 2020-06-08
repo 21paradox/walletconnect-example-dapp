@@ -50,7 +50,7 @@ export default class HttpProvider {
 
     if (method === 'cfx_sendTransaction') {
       const customRequest = {
-        id: this.requestId(),
+        id: parseInt(this.requestId(), 10),
         jsonrpc: "2.0",
         method,
         params,
