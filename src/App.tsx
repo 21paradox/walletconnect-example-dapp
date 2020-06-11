@@ -1,7 +1,8 @@
 import * as React from "react";
 import styled from "styled-components";
 import WalletConnect from "@walletconnect/browser";
-import WalletConnectQRCodeModal from "@walletconnect/qrcode-modal";
+// import WalletConnectQRCodeModal from "@walletconnect/qrcode-modal";
+import WalletConnectQRCodeModal from "test-cfx-walletconnect-qrcode-modal";
 import { convertUtf8ToHex } from "@walletconnect/utils";
 import { IInternalEvent } from "@walletconnect/types";
 import Button from "./components/Button";
@@ -21,12 +22,14 @@ import { IAssetData } from "./helpers/types";
 import Banner from "./components/Banner";
 import AccountAssets from "./components/AccountAssets";
 import * as Cfx from 'js-conflux-sdk/dist/js-conflux-sdk.umd.min.js';
-import Myprovider from './myProvider'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import fcabi from './fcabi.js'
 import Big from 'bignumber.js'
-import WalletConnectCfx from './myWcClient'
+// import WalletConnectCfx from './myWcClient'
+// import Myprovider from './myProvider'
+import WalletConnectCfx from 'cfx-walletconnect-client'
+import WalletConnectProvider from 'cfx-walletconnect-provider'
 
 const SLayout = styled.div`
   position: relative;
@@ -135,7 +138,7 @@ const STestButtonCfx = styled(STestButton)`
 `
 
 interface IAppState {
-  connector: WalletConnect | WalletConnectCfx | null;
+  connector:  WalletConnect | WalletConnectCfx | null;
   fetching: boolean;
   connected: boolean;
   chainId: number;
@@ -193,6 +196,10 @@ class App extends React.Component<any, any> {
         autoClose: false,
         hideProgressBar: true,
       });
+
+      WalletConnectQRCodeModal.updateMobileRegistry([{
+      }]);
+      console.log(WalletConnectQRCodeModal, 'WalletConnectQRCodeModal')
 
       // display QR Code modal
       WalletConnectQRCodeModal.open(uri, () => {
@@ -533,7 +540,8 @@ class App extends React.Component<any, any> {
     if (!connector) {
       return;
     }
-    const myProvider = new Myprovider('/api')
+    const myProvider = new WalletConnectProvider('/api', connector)
+    // const myProvider = new Myprovider('/api')
     const cfx = new Cfx.Conflux()
     cfx.provider = myProvider
     cfx.provider.connector = connector;
@@ -589,7 +597,8 @@ class App extends React.Component<any, any> {
     if (!connector) {
       return;
     }
-    const myProvider = new Myprovider('/api')
+    const myProvider = new WalletConnectProvider('/api', connector)
+    // const myProvider = new Myprovider('/api')
     const cfx = new Cfx.Conflux()
     cfx.provider = myProvider
     cfx.provider.connector = connector;
@@ -635,6 +644,31 @@ class App extends React.Component<any, any> {
       });
       throw e;
     }
+  }
+
+  public testSignMessage = async () => {
+    const { connector  } = this.state;
+    if (!connector) {
+      return;
+    }
+    toast.dismiss();
+    const toastId = toast.info('唤起远程授权', {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+    });
+    const resultPromise = connector.signMessage([
+      'hello world'
+    ]);
+    const sendSuccesResult = await resultPromise;
+
+    toast.update(toastId, {
+      type: 'success',
+      render: <span>
+        {JSON.stringify(sendSuccesResult)}
+      </span>
+    });
+    console.log(sendSuccesResult)
   }
 
   public testSendCfxByWallet = async () => {
@@ -762,6 +796,10 @@ class App extends React.Component<any, any> {
 
                     <STestButtonCfx left onClick={this.testSendCfxByWallet}>
                         wallet发送0.1cfx 到0x1b313Dd19F049C12E25dE358512D7B5a0fee9786
+                    </STestButtonCfx>
+
+                    <STestButtonCfx left onClick={this.testSignMessage}>
+                      call signMessage('str')
                     </STestButtonCfx>
 
                     </STestButtonContainer>

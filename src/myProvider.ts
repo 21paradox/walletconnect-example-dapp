@@ -1,5 +1,10 @@
 import superagent from 'superagent';
 
+function payloadId(): number {
+  const date = new Date().getTime() * Math.pow(10, 3);
+  const extra = Math.floor(Math.random() * Math.pow(10, 3));
+  return date + extra;
+}
 export default class HttpProvider {
 
   public url: string
@@ -50,9 +55,9 @@ export default class HttpProvider {
 
     if (method === 'cfx_sendTransaction') {
       const customRequest = {
-        id: parseInt(this.requestId(), 10),
+        id: payloadId(),
         jsonrpc: "2.0",
-        method,
+        method: 'cfx_signTransaction',
         params,
       };
 
@@ -92,6 +97,8 @@ export default class HttpProvider {
         .post(this.url)
         .send(data);
     }
+
+    console.log(res.body.result, res.body.error)
 
     if (res.body.result) {
       return res.body.result
