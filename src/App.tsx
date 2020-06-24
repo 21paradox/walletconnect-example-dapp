@@ -2,7 +2,7 @@ import * as React from "react";
 import styled from "styled-components";
 import WalletConnect from "@walletconnect/browser";
 // import WalletConnectQRCodeModal from "@walletconnect/qrcode-modal";
-import WalletConnectQRCodeModal from "test-cfx-walletconnect-qrcode-modal";
+import WalletConnectQRCodeModal from "cfx-walletconnect-qrcode-modal";
 import { convertUtf8ToHex } from "@walletconnect/utils";
 import { IInternalEvent } from "@walletconnect/types";
 import Button from "./components/Button";
@@ -20,7 +20,7 @@ import { sanitizeHex, recoverPersonalSignature, cfxAddr } from "./helpers/utilit
 import { convertAmountToRawNumber, convertStringToHex } from "./helpers/bignumber";
 import { IAssetData } from "./helpers/types";
 import Banner from "./components/Banner";
-import AccountAssets from "./components/AccountAssets";
+// import AccountAssets from "./components/AccountAssets";
 import * as Cfx from 'js-conflux-sdk/dist/js-conflux-sdk.umd.min.js';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -291,7 +291,7 @@ class App extends React.Component<any, any> {
       address,
     });
     WalletConnectQRCodeModal.close();
-    this.getAccountAssets();
+    // this.getAccountAssets();
   };
 
   public onDisconnect = async () => {
@@ -302,14 +302,14 @@ class App extends React.Component<any, any> {
   public onSessionUpdate = async (accounts: string[], chainId: number) => {
     const address = accounts[0];
     await this.setState({ chainId, accounts, address });
-    await this.getAccountAssets();
+    // await this.getAccountAssets();
   };
 
   public getAccountAssets = async () => {
     const { address, chainId } = this.state;
     this.setState({ fetching: true });
     try {
-      if (chainId === 111) {
+      if (chainId === 0) {
         console.log('test')
       } else {
         // get account balances
@@ -774,7 +774,7 @@ class App extends React.Component<any, any> {
                   <h3>Actions</h3>
                   <Column center>
                     <STestButtonContainer>
-                      <STestButton left onClick={this.testSendTransaction}>
+                      {/* <STestButton left onClick={this.testSendTransaction}>
                         {"eth_sendTransaction"}
                       </STestButton>
 
@@ -784,7 +784,7 @@ class App extends React.Component<any, any> {
 
                       <STestButton disabled left onClick={this.testSignTypedData}>
                         {"eth_signTypedData"}
-                      </STestButton>
+                      </STestButton> */}
 
                       <STestButtonCfx left onClick={this.testSendFc}>
                         发送0.1fc 到0x1b313Dd19F049C12E25dE358512D7B5a0fee9786
@@ -804,7 +804,7 @@ class App extends React.Component<any, any> {
 
                     </STestButtonContainer>
                   </Column>
-                  <h3>Balances</h3>
+                  {/* <h3>Balances</h3>
                   {!fetching ? (
                     <AccountAssets chainId={chainId} assets={assets} />
                   ) : (
@@ -813,7 +813,7 @@ class App extends React.Component<any, any> {
                           <Loader />
                         </SContainer>
                       </Column>
-                    )}
+                    )} */}
                 </SBalances>
               )}
           </SContent>
