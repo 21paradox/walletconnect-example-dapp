@@ -16,7 +16,7 @@ import { apiGetAccountAssets, apiGetGasPrices, apiGetAccountNonce } from "./help
 // import {
 //   recoverTypedSignature
 // } from "./helpers/ethSigUtil";
-import { sanitizeHex, recoverPersonalSignature, cfxAddr } from "./helpers/utilities";
+import { sanitizeHex, recoverPersonalSignature } from "./helpers/utilities";
 import { convertAmountToRawNumber, convertStringToHex } from "./helpers/bignumber";
 import { IAssetData } from "./helpers/types";
 import Banner from "./components/Banner";
@@ -556,7 +556,7 @@ class App extends React.Component<any, any> {
     try {
       const resultPromise = cfx.sendTransaction({ // Not await here, just get promise
         chainId: 0,
-        from: cfxAddr(address),
+        from: address,
         to: '0x1b313Dd19F049C12E25dE358512D7B5a0fee9786',
         value: Cfx.util.unit.fromCFXToDrip(0.1),
       });
@@ -623,10 +623,19 @@ class App extends React.Component<any, any> {
       const resultPromise = contractNew.send('0x1b313Dd19F049C12E25dE358512D7B5a0fee9786', value, Buffer.from('bytes'))
         .sendTransaction({
           chainId: 0,
-          from: cfxAddr(address)
+          from: address
         });
 
-      const result = await resultPromise.confirmed({ delta: 3000 });
+        const sendSuccesResult = await resultPromise;
+        toast.update(toastId, {
+          type: 'success',
+          render: <span>
+            send success &nbsp;
+          <a target="_blank" href={`https://confluxscan.io/transactionsdetail/${sendSuccesResult}`} style={{ textDecoration: 'underline' }}>前往scan查看</a>
+          </span>
+        });
+
+      const result = await resultPromise.confirmed({ delta: 5000 });
       toast.update(toastId, {
         type: 'success',
         render: <span>
@@ -687,7 +696,7 @@ class App extends React.Component<any, any> {
     try {
       const resultPromise = connector.sendTransaction({
         // chainId: 0,
-        from: cfxAddr(address),
+        from: address,
         to: '0x1b313Dd19F049C12E25dE358512D7B5a0fee9786',
         value: Cfx.util.unit.fromCFXToDrip(0.1),
       });
